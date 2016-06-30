@@ -8,7 +8,7 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=ucollect-meta
-PKG_VERSION:=5
+PKG_VERSION:=6
 PKG_MAINTAINER:=Michal Vaner <michal.vaner@nic.cz>
 PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)
 
@@ -18,7 +18,7 @@ include $(INCLUDE_DIR)/package.mk
 
 define Package/$(PKG_NAME)
 	TITLE:=$(PKG_NAME)
-	DEPENDS:=+ucollect-badconf +ucollect-bandwidth +ucollect-buckets +ucollect-count +ucollect-flow +ucollect-sniff +ucollect-spoof +ucollect-refused +ucollect-fake +ucollect-fwup +ip6tables +iptables
+	DEPENDS:=+ucollect-badconf +ucollect-bandwidth +ucollect-count +ucollect-flow +ucollect-sniff +ucollect-spoof +ucollect-refused +ucollect-fake +ucollect-fwup +ip6tables +iptables
 endef
 
 define Build/Compile
