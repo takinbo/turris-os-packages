@@ -11,7 +11,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=knot-resolver
 PKG_VERSION=1.1.1
-PKG_RELEASE:=8
+PKG_RELEASE:=9
 
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_URL:=https://gitlab.labs.nic.cz/knot/resolver.git
@@ -58,6 +58,7 @@ define Package/knot-resolver/install
 
 	$(INSTALL_DIR) $(1)/etc/kresd
 	$(CP) $(PKG_BUILD_DIR)/etc/icann-ca.pem $(1)/etc/kresd
+	$(INSTALL_BIN) ./files/dhcp_host_domain.sh $(1)/etc/kresd/dhcp_host_domain.sh
 endef
 
 define Package/$(PKG_NAME)/postinst

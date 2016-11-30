@@ -9,6 +9,9 @@ CONFIGFILE=/tmp/kresd.config
 ROOTKEYFILE=/etc/root.keys
 DEFAULT_RUNDIR=/tmp/kresd
 
+ENABLE_EXPAND=0
+DHCP_SCRIPT=/etc/kresd/dhcp_host_domain.sh
+
 # Check the /etc/unbound/root.keys is reasonable and try to fix it with given command
 check_root_key() {
 	# Don't do anything if it looks OK
@@ -68,6 +71,42 @@ include_custom_config() {
 	else
 		[ -z "$custom_config_path" ] || echo "Warning! Kresd custom config file  $custom_config_path doesn't exist."
 	fi
+}
+
+get_dhcp_expand_hosts() {
+	config_get_bool ENABLE_EXPAND $1 expandhosts
+}
+
+set_dhcp_script() {
+	uci_set dhcp $1 dhcpscript $2
+	uci_commit dhcp
+}
+
+get_local_domain() {
+	config_get DOMAIN $1 local
+	[ -z "$DOMAIN" ] || DOMAIN="`echo "$DOMAIN" | sed 's|/||g'`"
+}
+
+set_local_host() {
+	config_get NAME $1 name
+	config_get IP $1 ip
+	if [ -n "$NAME" ] && [ -n "$DOMAIN" ] && [ -n "$IP" ]; then
+		echo "hints['$NAME.$DOMAIN'] = '$IP'" >> $CONFIGFILE
+	fi
+}
+
+load_uci_config_dhcp() {
+	config_load dhcp
+	config_foreach get_dhcp_expand_hosts dnsmasq
+
+	if [ "$ENABLE_EXPAND" -eq 1 ]; then
+		#set dhcp script called by dnsmasq
+		config_foreach set_dhcp_script dnsmasq "$DHCP_SCRIPT"
+	fi
+
+	config_foreach get_local_domain dnsmasq
+	config_foreach set_local_host host
+	config_load resolver
 }
 
 load_uci_config_common() {
@@ -133,19 +172,6 @@ load_uci_config_common() {
 	include_custom_config
 }
 
-get_local_domain() {
-	config_get DOMAIN $1 local
-	[ -z "$DOMAIN" ] || DOMAIN="`echo "$DOMAIN" | sed 's|/||g'`"
-}
-
-set_local_host() {
-	config_get NAME $1 name
-	config_get IP $1 ip
-	if [ -n "$NAME" ] && [ -n "$DOMAIN" ] && [ -n "$IP" ]; then
-		echo "hints['$NAME.$DOMAIN'] = '$IP'" >> $CONFIGFILE
-	fi
-}
-
 load_uci_config_kresd() {
 	local addr config keyfile forks verbose rundir log_stderr log_stdout
 	local section="kresd"
@@ -173,10 +199,6 @@ load_uci_config_kresd() {
 	if [ -e "$hostname_config" ]; then
 		set_param_func "hints.config" "'$hostname_config'"
 	fi
-	config_load dhcp
-	config_foreach get_local_domain dnsmasq
-	config_foreach set_local_host host
-	config_load resolver
 }
 
 run_instance() {
@@ -184,6 +206,7 @@ run_instance() {
 	procd_set_param file /etc/config/resolver
 	procd_set_param command "$PROG"
 	init_header
+	load_uci_config_dhcp
 	load_uci_config_kresd
 	load_uci_config_common
 	procd_close_instance
