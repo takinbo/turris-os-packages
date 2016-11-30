@@ -29,15 +29,12 @@ add_include() {
 
 set_local_zone() {
     host_filename=$1
-    if [ -e $host_filename ]; then
-
-        while read -r line
-        do
-            ipaddr=$(echo $line|awk '{ print $1 }')
-            name=$(echo $line|awk '{ print $2}')
-            echo "	local-zone: \"$name.\" static">>$CONFIGFILE
-            echo "	local-data: \"$name. IN A $ipaddr\" ">>$CONFIGFILE
-        done < $host_filename
+    if [ "$host_filename" ] && [ -e "$host_filename" ]; then
+        sed -n \
+        -e 's|^[[:blank:]]*\([0-9.]\+\)[[:blank:]]\+\([^#[:blank:]]\+\)$|\tlocal-zone: "\2." static\n\tlocal-data: "\2. IN A \1\"|p' \
+        -e 's|^[[:blank:]]*\([0-9a-f:]\+\)[[:blank:]]\+\([^#[:blank:]]\+\)$|\tlocal-zone: "\2." static\n\tlocal-data: "\2. IN AAAA \1\"|p' \
+        -e 's|^[[:blank:]]*\([0-9.]\+\)[[:blank:]]\+\([^#[:blank:]]\+\)[[:blank:]#].*|\tlocal-zone: "\2." static\n\tlocal-data: "\2. IN A \1\"|p' \
+        -e 's|^[[:blank:]]*\([0-9a-f:]\+\)[[:blank:]]\+\([^#[:blank:]]\+\)[[:blank:]#].*|\tlocal-zone: "\2." static\n\tlocal-data: "\2. IN AAAA \1\"|p' "$host_filename" >> "$CONFIGFILE"
     fi
 }
 
@@ -106,11 +103,29 @@ check_root_key() {
     eval "$@"
 }
 
+get_local_domain() {
+    config_get DOMAIN $1 local
+    if [ -n "$DOMAIN" ]; then
+        DOMAIN="`echo "$DOMAIN" | sed 's|/||g'`"
+        echo "  local-zone: \"$DOMAIN.\" static" >> "$CONFIGFILE"
+    fi
+}
+
+set_local_host() {
+    config_get NAME $1 name
+    config_get IP $1 ip
+    if [ -n "$NAME" ] && [ -n "$DOMAIN" ] && [ -n "$IP" ]; then
+        echo "  local-data: \"$NAME.$DOMAIN. IN A $IP\"" >> "$CONFIGFILE"
+        echo "  local-data-ptr: \"$IP $NAME.$DOMAIN\"" >> "$CONFIGFILE"
+    fi
+}
+
 #initialize everything
 init_unbound() {
     config_load resolver
 
-    local ignore_root_key, hostname_config
+    local ignore_root_key
+    local hostname_config
     config_get_bool ignore_root_key common ignore_root_key 0
 
     # Do not try to restore the root key if it's not used
@@ -147,10 +162,14 @@ init_unbound() {
     set_bool_parameter net_ipv6 do-ip6 1
     set_parameter prefetch prefetch yes
 
-    config_get hostname_config "unbound" hostname_config "/etc/hosts"
-    if [ -e "$hostname_config" ] ; then
+    config_get hostname_config "unbound" hostname_config ""
+    if [ -n "$hostname_config" ] && [ -e "$hostname_config" ] ; then
         set_local_zone $hostname_config
     fi
+    config_load dhcp
+    config_foreach get_local_domain dnsmasq
+    config_foreach set_local_host host
+    config_load resolver
 
     set_section unbound
     set_parameter outgoing_range outgoing-range 60
@@ -244,7 +263,7 @@ stop() {
     config_get pidfile unbound pidfile
 
     if [ -f "$pidfile" ] ; then
-        kill $(cat $pidfile) ; rm "$pidfile"
+        kill $(cat $pidfile) ; rm -f "$pidfile"
     fi
     sleep 1 # For cleanup of ports and such
 }

@@ -9,7 +9,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=mpd
 PKG_VERSION:=0.19.14
-PKG_RELEASE:=1
+PKG_RELEASE:=2
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
 PKG_SOURCE_URL:=http://www.musicpd.org/download/mpd/0.19/
@@ -52,7 +52,7 @@ $(call Package/mpd/Default)
   TITLE+= (full)
   DEPENDS+= \
 	+libaudiofile +BUILD_PATENTED:libfaad2 +libffmpeg +libid3tag \
-	+libmms +libogg +libsndfile +libvorbis +libupnp
+	+libmms +libogg +libsndfile +libvorbis +libupnp +pulseaudio-daemon
   PROVIDES:=mpd
   VARIANT:=full
 endef
@@ -127,7 +127,6 @@ CONFIGURE_ARGS += \
 	--disable-mpg123 \
 	--disable-openal \
 	--disable-opus \
-	--disable-pulse \
 	--disable-sidplay \
 	--disable-solaris-output \
 	--disable-sqlite \
@@ -153,7 +152,7 @@ CONFIGURE_VARS += \
 	$(if $(CONFIG_BUILD_PATENTED),MAD_CFLAGS="$(TARGET_CFLAGS)") \
 	$(if $(CONFIG_BUILD_PATENTED),MAD_LIBS="$(TARGET_LDFLAGS) -lmad") \
 
-TARGET_LDFLAGS += -Wl,-rpath-link=$(STAGING_DIR)/usr/lib $(if $(ICONV_FULL),-liconv)
+TARGET_LDFLAGS += -Wl,-rpath-link=$(STAGING_DIR)/usr/lib,-rpath-link=$(STAGING_DIR)/usr/lib/pulseaudio $(if $(ICONV_FULL),-liconv)
 
 ifeq ($(BUILD_VARIANT),full)
 
@@ -167,6 +166,7 @@ ifeq ($(BUILD_VARIANT),full)
 	--enable-lastfm \
 	--enable-mms \
 	--enable-oggflac \
+	--enable-pulse \
 	--enable-pipe-output \
 	--enable-recorder-output \
 	--disable-shout \
@@ -192,6 +192,7 @@ ifeq ($(BUILD_VARIANT),mini)
 	--disable-pipe-output \
 	--disable-recorder-output \
 	--disable-shout \
+	--disable-pulse \
 	--disable-sndfile \
 	--disable-vorbis \
 	--disable-vorbis-encoder \

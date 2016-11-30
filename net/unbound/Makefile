@@ -8,12 +8,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=unbound
-PKG_VERSION:=1.5.1
-PKG_RELEASE:=10
+PKG_VERSION:=1.5.10
+PKG_RELEASE:=5
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=http://www.unbound.net/downloads
-PKG_MD5SUM:=ed4c46476dcfb8a507cc08b1ba12a8f1
+PKG_MD5SUM:=a39b8b4fcca2a2b35a2daa53fe35150cc3f09038dc9acede09c912fc248a9486
 
 PKG_BUILD_DEPENDS:=libexpat
 PKG_BUILD_PARALLEL:=1
@@ -143,8 +143,6 @@ define Package/unbound/install
 	$(INSTALL_CONF) ./files/named.cache $(1)/etc/unbound/
 	$(INSTALL_DIR) $(1)/etc/init.d
 	$(INSTALL_BIN) ./files/unbound-init $(1)/etc/init.d/unbound
-	$(INSTALL_DIR) $(1)/etc/hotplug.d/iface/
-	$(CP) ./files/unbound-reload $(1)/etc/hotplug.d/iface/40-unbound-reload
 	$(INSTALL_DIR) $(1)/etc/uci-defaults
 	$(INSTALL_BIN) ./files/unbound.defaults $(1)/etc/uci-defaults/unbound
 	$(INSTALL_DIR) $(1)/usr/share/unbound/

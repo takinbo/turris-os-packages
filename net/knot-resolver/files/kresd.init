@@ -126,6 +126,7 @@ load_uci_config_common() {
 				echo "policy:add(policy.all(policy.FORWARD('$SERVER')))">>$CONFIGFILE
 			done
 		fi
+		md5sum /tmp/resolv.conf.auto | cut -f1 -d\ >/tmp/resolv.conf.auto.last.md5
 	fi
 
 	# include custom kresd config
@@ -133,7 +134,8 @@ load_uci_config_common() {
 }
 
 get_local_domain() {
-	config_get DOMAIN $1 domain
+	config_get DOMAIN $1 local
+	[ -z "$DOMAIN" ] || DOMAIN="`echo "$DOMAIN" | sed 's|/||g'`"
 }
 
 set_local_host() {
