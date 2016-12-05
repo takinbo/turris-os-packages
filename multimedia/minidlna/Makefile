@@ -9,7 +9,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=minidlna
 PKG_VERSION:=1.1.5
-PKG_RELEASE:=2
+PKG_RELEASE:=3
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=@SF/minidlna
@@ -92,6 +92,7 @@ if [ -z "$${IPKG_INSTROOT}" ]; then
                 rm /etc/rc.d/K[0-9][0-9]minidlna
                 /etc/init.d/minidlna enable
         fi
-enddef
+fi
+endef
 
 $(eval $(call BuildPackage,minidlna))
