@@ -71,6 +71,11 @@ run_cmd() {
 			echo "Error! kresd and unbound not found !"
 			exit 1
 		fi
+	else
+		echo "Error! Unsupported resolver. $pref"
+		/etc/init.d/kresd stop
+		/etc/init.d/unbound stop
+		exit 1
 	fi
 }
 save_resolver_info() {
